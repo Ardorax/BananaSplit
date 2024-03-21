@@ -23,11 +23,13 @@ function banana_split() {
     fi
     while read p; do
         IFS=':' read -ra ADDR <<< "$p"
-        while read ignored; do
-            if [ "$ignored" -ef "${ADDR[0]}" ]; then
-                continue 2
-            fi
-        done < "ignore.tmp"
+        if [ -f "ignore.tmp" ]; then
+            while read ignored; do
+                if [ "$ignored" -ef "${ADDR[0]}" ]; then
+                    continue 2
+                fi
+            done < "ignore.tmp"
+        fi
         if [ "$CURRENT_FILE" != "${ADDR[0]}" ]; then
             echo "‣ In file ${ADDR[0]}"
             CURRENT_FILE="${ADDR[0]}"

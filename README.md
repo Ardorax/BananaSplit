@@ -4,7 +4,7 @@ The script display a colored output on the terminal (inspired by [Abricot-Normin
 
 ### Install
 ```
-git clone git@github.com:Ardorax/BananaSplit.git
+git clone git@github.com:Epibite/BananaSplit.git
 
 mv BananaSplit/coding-style.sh ~/.local/bin/banana
 # OR

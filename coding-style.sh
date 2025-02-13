@@ -18,8 +18,18 @@ function cat_readme() {
 function banana_split() {
     CURRENT_FILE=".c"
     echo -e "${Yellow}BANANA NA NA NA NA${Color_Off}"
+    if [ -f ".gitignore" ]; then
+        git ls-files --others --ignored --exclude-standard > ignore.tmp
+    fi
     while read p; do
         IFS=':' read -ra ADDR <<< "$p"
+        if [ -f "ignore.tmp" ]; then
+            while read ignored; do
+                if [ "$ignored" -ef "${ADDR[0]}" ]; then
+                    continue 2
+                fi
+            done < "ignore.tmp"
+        fi
         if [ "$CURRENT_FILE" != "${ADDR[0]}" ]; then
             echo "‣ In file ${ADDR[0]}"
             CURRENT_FILE="${ADDR[0]}"
@@ -35,6 +45,7 @@ function banana_split() {
         echo -ne " ($error)${Color_Off} - ${errors[${error}]^}."
         echo -e " ${IBlack}(${ADDR[0]: 2}:${ADDR[1]})${Color_Off}"
     done < "$1"
+    rm -f "ignore.tmp"
     echo -e "${Yellow}BANANA SPLIT${Color_Off}"
 }
 
@@ -89,10 +100,17 @@ errors=(
 
 if [ $# == 1 ] && [ $1 == "--help" ]; then
     cat_readme
-elif [ $# = 2 ];
+elif [ $# == 1 ] || [ $# = 2 ];
 then
+    if [ $# == 1 ];
+    then
+        REPORTS_DIR=$(my_readlink ".")
+    elif [ $# = 2 ];
+    then
+        REPORTS_DIR=$(my_readlink "$2")
+    fi
+
     DELIVERY_DIR=$(my_readlink "$1")
-    REPORTS_DIR=$(my_readlink "$2")
     DOCKER_SOCKET_PATH=/var/run/docker.sock
     HAS_SOCKET_ACCESS=$(test -r $DOCKER_SOCKET_PATH; echo "$?")
     GHCR_REGISTRY_TOKEN=$(curl -s "https://ghcr.io/token?service=ghcr.io&scope=repository:epitech/coding-style-checker:pull" | grep -o '"token":"[^"]*' | grep -o '[^"]*$') 
@@ -128,7 +146,7 @@ then
     fi
 
     ### generate reports
-    $BASE_EXEC_CMD run --rm -i -v "$DELIVERY_DIR":"/mnt/delivery" -v "$REPORTS_DIR":"/mnt/reports" ghcr.io/epitech/coding-style-checker:latest "/mnt/delivery" "/mnt/reports"
+    $BASE_EXEC_CMD run --rm --security-opt "label:disable" -i -v "$DELIVERY_DIR":"/mnt/delivery" -v "$REPORTS_DIR":"/mnt/reports" ghcr.io/epitech/coding-style-checker:latest "/mnt/delivery" "/mnt/reports"
     # [[ -f "$EXPORT_FILE" ]] && echo "$(wc -l < "$EXPORT_FILE") coding style error(s) reported in "$EXPORT_FILE", $(grep -c ": MAJOR:" "$EXPORT_FILE") major, $(grep -c ": MINOR:" "$EXPORT_FILE") minor, $(grep -c ": INFO:" "$EXPORT_FILE") info"
 
     banana_split "$EXPORT_FILE"
